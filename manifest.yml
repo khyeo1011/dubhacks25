@@ -1,0 +1,20 @@
+modules:
+  jira:projectPage:
+    - key: dubhacks2025-hello-world-project-page
+      resource: main
+      resolver:
+        function: resolver
+      render: native
+      title: dubhacks2025
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/54047718-10bf-48bd-b03a-ce7bfe21401b
