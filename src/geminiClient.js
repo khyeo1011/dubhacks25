@@ -4,8 +4,8 @@ import fs from 'node:fs/promises'
 
 const ai = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
 
-export async function analyzePrompt({ userPrompt, file }) {
-  if (!userPrompt || !file) throw new Error('Prompt and file are required.');
+export async function analyzePrompt({ userPrompt, fileText }) {
+  if (!userPrompt || !fileText) throw new Error('Prompt and file texts are required.');
   const logicPrompt = `You are an expert Jira Project Analyst and Data Quality Auditor. Your primary function is to meticulously analyze a provided CSV dataset of Jira issues to enhance project clarity, efficiency, and data integrity.
                       I will first provide the complete raw data from a CSV file containing all tickets/issues for a specific Jira project. The data will include columns such as 'Issue Key', 'Summary', 'Description', 'Status', 'Assignee', 'Created Date', 'Reporter', and other relevant fields.
                       After receiving and processing the data, I will provide subsequent requests using the following format: **User Request: [Request text]**.
@@ -18,7 +18,7 @@ export async function analyzePrompt({ userPrompt, file }) {
 
                       **2. Duplicate Issue Mitigation and Flagging:**
                       * Identify potential **duplicate issues** by comparing the 'Summary' and the first 100 words of the 'Description'.
-                      * Generate a summary list of all highly probable duplicate groups. For each group, list the 'Issue Key' and 'Summary' of the primary/original ticket and the suspected duplicates.
+                      * Generate a summary list of all highly probable duplicate groups. For each group, list the 'Issue Key', 'Summary' and 'Description' of the primary/original ticket and the suspected duplicates.
                       * Be ready to respond to a prompt like: "Are there any duplicate tickets currently?" by presenting this summary.
 
                       **3. Data Quality (Crappy Ticket) Clean-up and Flagging:**
@@ -31,7 +31,7 @@ export async function analyzePrompt({ userPrompt, file }) {
 
                       **4. New Issue Creation and Duplicate Prevention:**
                       * When the **User Request** involves creating a new ticket (e.g., "I need to open a ticket for the login button bug on the homepage, could you check if it already exists"), you must **perform a duplicate check** against the existing data.
-                      * **If Duplicates are Found:** State clearly that a similar ticket already exists. Provide the 'Issue Key' and 'Summary' and 'Description' of the most relevant existing ticket and ask the user if they would like to update that existing ticket instead of creating a new one.
+                      * **If Duplicates are Found:** State clearly that a similar ticket already exists. Provide the 'Issue Key', 'Summary' and **'Description'** of the most relevant existing ticket and ask the user if they would like to update that existing ticket instead of creating a new one.
                       * **If No Duplicates are Found:** Acknowledge the request and provide the **draft content** for the new ticket, including suggested 'Summary' and 'Description' fields based on the user's input.
 
                       Rules:
@@ -49,14 +49,10 @@ export async function analyzePrompt({ userPrompt, file }) {
     },
   ];
 
-  const filePath = typeof file === 'string' ? file : file?.name;
-  if (!filePath?.endsWith('.csv')) throw new Error('File should be a CSV format.');
-
-  const fileBytes = await fs.readFile(filePath);
   messages[0].parts.push({
     inlineData: {
       mimeType: 'text/csv',
-      data: Buffer.from(fileBytes).toString('base64'),
+      data: Buffer.from(fileText).toString('base64'),
     },
   });
 
