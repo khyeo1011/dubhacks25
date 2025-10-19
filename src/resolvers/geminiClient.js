@@ -58,7 +58,7 @@ export async function analyzePrompt({ userPrompt, fileText }) {
 
   // send to Gemini
   const response = await ai.models.generateContent({
-    model: "models/gemini-2.5-flash",
+    model: "models/gemini-2.5-pro",
     contents: messages,
   });
 
