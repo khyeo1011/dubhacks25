@@ -17,6 +17,7 @@
     "@forge/react": "11.5.0",
     "@forge/resolver": "1.7.0",
     "dotenv": "^17.2.3",
+    "marklassian": "^1.1.0",
     "react": "^18.2.0"
   }
 }
