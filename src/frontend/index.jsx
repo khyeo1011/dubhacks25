@@ -62,52 +62,45 @@ const App = () => {
     }
   }, []);
 
-  const audioCtxRef = useRef(null);
-
-  const unlockAudio = () => {
-    try {
-      const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) {
-        console.log('AudioContext not supported.');
-        return;
-      }
-
-      if (!audioCtxRef.current) {
-        audioCtxRef.current = new AudioCtx();
-      }
-
-      // Resume immediately on gesture
-      if (audioCtxRef.current.state === 'suspended') {
-        audioCtxRef.current.resume().then(() => {
-          console.log('AudioContext resumed. State =', audioCtxRef.current.state);
-        });
-      }
-    } catch (err) {
-      console.error('unlockAudio error:', err);
-    }
-  };
+  const audioRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const playBase64Audio = async (base64Audio) => {
     try {
-      const audioCtx = audioCtxRef.current;
-      if (!audioCtx) {
-        console.warn('AudioContext not initialized');
-        return;
+      // Convert base64 to blob URL
+      const audioBytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+      const blob = new Blob([audioBytes.buffer], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+
+      // Create new audio element
+      const audio = new Audio(url);
+      
+      // Clean up previous audio if exists
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.src = '';
       }
 
-      // Convert Base64 → ArrayBuffer
-      const audioBytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
-      const audioBuffer = await audioCtx.decodeAudioData(audioBytes.buffer);
+      // Set up event handlers
+      audio.onended = () => {
+        setIsPlaying(false);
+        URL.revokeObjectURL(url);
+      };
+      audio.onerror = (e) => {
+        console.error('Audio playback error:', e);
+        setIsPlaying(false);
+        URL.revokeObjectURL(url);
+      };
 
-      // Create and start playback
-      const source = audioCtx.createBufferSource();
-      source.buffer = audioBuffer;
-      source.connect(audioCtx.destination);
-      source.start();
+      // Play audio
+      audioRef.current = audio;
+      setIsPlaying(true);
+      await audio.play();
 
       console.log('Audio playback started');
     } catch (err) {
       console.error('Error playing audio:', err);
+      setIsPlaying(false);
     }
   };
 
@@ -191,10 +184,7 @@ const App = () => {
         // Request TTS data
         const audioBase64 = await invoke('getTTS', { text: result });
 
-        // Unlock audio context (if not already)
-        unlockAudio();
-
-        // Play TTS audio safely
+        // Play TTS audio
         await playBase64Audio(audioBase64);
       }
     } catch (err) {
@@ -232,7 +222,6 @@ const App = () => {
             <LoadingButton 
               type="submit" 
               appearance="primary" 
-              onClick={unlockAudio}
               isLoading={isSubmitting}
               isDisabled={isSubmitting}
             >
@@ -241,8 +230,6 @@ const App = () => {
           </ButtonGroup>
         </FormFooter>
       </Form>
-      <Toggle id="TTS" onChange={handleAudioToggle} isChecked={ttsEnabled}></Toggle>
-      <Label labelFor="TTS">Enable Text-to-Speech</Label>
       {responseText && (
         <AdfRenderer document={responseText} />
       )}
