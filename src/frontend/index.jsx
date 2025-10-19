@@ -9,7 +9,8 @@ import ForgeReconciler, {
   Textfield,
   useForm,
   AdfRenderer,
-  LoadingButton
+  LoadingButton,
+  Icon
 } from '@forge/react';
 import { markdownToAdf } from 'marklassian';
 import { invoke } from '@forge/bridge';
@@ -57,7 +58,7 @@ const App = () => {
     }
   }, []);
 
-  
+
 
 
   const handleVoiceToggle = () => {
@@ -108,7 +109,18 @@ const App = () => {
     }
   };
 
-
+  const handleExport = async () => {
+    const jsonString = JSON.stringify(responseText);
+    const blob = new Blob([jsonString], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `ADF_export_${new Date(Date.now()).toLocaleDateString()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
 
   const handleQueryChange = (e) => {
@@ -152,16 +164,16 @@ const App = () => {
 
         <FormFooter>
           <ButtonGroup>
-            <Button 
-              onClick={handleVoiceToggle} 
+            <Button
+              onClick={handleVoiceToggle}
               appearance={isListening ? 'danger' : 'default'}
               isDisabled={isSubmitting}
             >
               {isListening ? 'Stop Listening' : 'Voice Input'}
             </Button>
-            <LoadingButton 
-              type="submit" 
-              appearance="primary" 
+            <LoadingButton
+              type="submit"
+              appearance="primary"
               isLoading={isSubmitting}
               isDisabled={isSubmitting}
             >
@@ -170,6 +182,10 @@ const App = () => {
           </ButtonGroup>
         </FormFooter>
       </Form>
+      <Button onClick={handleExport}
+        iconAfter='arrow-down'
+        appearance={!responseText ? 'primary' : 'default'}
+        isDisabled={!responseText}>Export ADF</Button>
       {responseText && (
         <AdfRenderer document={responseText} />
       )}
