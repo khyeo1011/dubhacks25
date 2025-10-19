@@ -20,15 +20,16 @@ export async function analyzePrompt({ userPrompt, fileText }) {
                       * Generate a summary list of all highly probable duplicate groups. For each group, list the 'Issue Key', 'Summary' and 'Description' of the primary/original ticket and the suspected duplicates.
                       * Be ready to respond to a prompt like: "Are there any duplicate tickets currently?" by presenting this summary.
 
-                      **3. Data Quality (Crappy Ticket) Clean-up and Flagging:**
-                      * Analyze all tickets to identify and flag **'Crappy Tickets'**—those with poor data quality or indicating neglect.
-                      * Flag a ticket if it meets one or more of the following criteria:
+                      **3. Data Quality (Garbage Ticket) Clean-up and Flagging:**
+                      * Analyze all tickets to identify and flag **'Garbage Tickets'**—those with poor data quality or indicating neglect. Use the INVEST criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable) as a guideline.
+                      * Flag a ticket if it meets one or more of the following criteria (ranked by importance):
+                      * **Lack of INVEST Compliance:** Tickets that do not meet the INVEST criteria.
                       * **Insufficient Information:** 'Description' field is empty, contains only placeholder text (e.g., "TBD," "fill out later"), or is under 20 words.
                       * **Unassigned:** The 'Assignee' field is empty or set to a generic project queue user.
                       * **Stale Status:** The 'Status' is 'Open' or 'To Do', and the 'Last Updated' date is more than 60 days ago.
-                      * Provide a concise list of all flagged 'Crappy Tickets', including the 'Issue Key', 'Summary', and the **specific reason(s)** for the flag (e.g., "Unassigned & Insufficient Info").
+                      * Provide a concise list of all flagged 'Garbage Tickets', including the 'Issue Key', 'Summary', and the **specific reason(s)** for the flag (e.g., "Unassigned & Insufficient Info").
 
-                      **4. New Issue Creation and Duplicate Prevention:**
+                      **4. New Issue Creation Help and Duplicate Prevention:**
                       * When the **User Request** involves creating a new ticket (e.g., "I need to open a ticket for the login button bug on the homepage, could you check if it already exists"), you must **perform a duplicate check** against the existing data.
                       * **If Duplicates are Found:** State clearly that a similar ticket already exists. Provide the 'Issue Key', 'Summary' and **'Description'** of the most relevant existing ticket and ask the user if they would like to update that existing ticket instead of creating a new one.
                       * **If No Duplicates are Found:** Acknowledge the request and provide the **draft content** for the new ticket, including suggested 'Summary' and 'Description' fields based on the user's input.
@@ -38,7 +39,9 @@ export async function analyzePrompt({ userPrompt, fileText }) {
                       2. User request will be provided below, and if it does not going to include any of the core capabilities, simply let the user know what our functionalities are.
                       3. Do not include user request in your reply.
                       4. No need to give beginner message saying that you are ready, just do it.
-                      5. SUPER IMPORTANT -> **Do NOT give any follow up suggestions like "Would you like to..." at the end or anywhere in the reply message, only do what user asked/requested and end chat. You are also unable to create new issues-- only give direction**`;
+                      5. SUPER IMPORTANT -> **Do NOT give any follow up suggestions like "Would you like to..." at the end or anywhere in the reply message, only do what user asked/requested and end chat. You are also unable to create new issues-- only give direction**
+                      6. Be as detailed as possible in your analysis and replies.
+                      7. If possible, format your response in tables if the list is long.`;
 
   const fullPrompt = `${logicPrompt}\n\nUser request: ${userPrompt}`;
   const messages = [
