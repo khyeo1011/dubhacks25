@@ -22,5 +22,5 @@ permissions:
   external:
     fetch:
       backend:
-        - address: "*.elevenlabs.io"
+        - address: "https://api.elevenlabs.io"
   scopes: []

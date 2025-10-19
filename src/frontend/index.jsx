@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ForgeReconciler, {
   Button,
   ButtonGroup,
@@ -10,7 +10,8 @@ import ForgeReconciler, {
   useForm,
   TextArea,
   Link,
-  Box
+  Label,
+  Toggle
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
 import { BrowserSTT } from './stt';
@@ -46,7 +47,7 @@ const App = () => {
   const [responseText, setResponseText] = useState(''); // state for response text
   const [isListening, setIsListening] = useState(false);
   const [stt, setStt] = useState(null);
-
+  const [ttsEnabled, setTtsEnabled] = useState(false);
 
   useEffect(() => {
     if (BrowserSTT.isSupported()) {
@@ -57,51 +58,83 @@ const App = () => {
     }
   }, []);
 
-const handleVoiceToggle = () => {
-  if (!stt) {
-    alert('Speech recognition not supported.');
-    return;
-  }
+  const audioCtxRef = useRef(null);
 
-  if (!isListening) {
-    // START listening
-    setLoading(true);
-    setIsListening(true);
-
-    stt.start({
-      onPartial: (text) => {
-        const combined = `${buffer} ${text}`.trim();
-        setQuery(combined);
-        setValue('query', combined);
-      },
-      onFinal: (text) => {
-        setQuery(text);
-        setValue('query', text);
-        setLoading(false);
-        setIsListening(false);
-      },
-      onError: (e) => {
-        console.error('STT error:', e);
-        setLoading(false);
-        setIsListening(false);
-      },
-    });
-  } else {
-    // STOP gracefully
+  const unlockAudio = () => {
     try {
-      stt._rec.onend = () => {
-        console.log('Recognition stopped by user.');
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return false;
+
+      if (!audioCtxRef.current) {
+        audioCtxRef.current = new AudioCtx();
+      }
+      // resume returns a Promise
+      audioCtxRef.current.resume().then(() => {
+        console.log('AudioContext resumed (user gesture). state=', audioCtxRef.current.state);
+      }).catch(err => {
+        console.warn('AudioContext resume failed:', err);
+      });
+
+      return true;
+    } catch (err) {
+      console.warn('unlockAudio error', err);
+      return false;
+    }
+  };
+
+  const handleVoiceToggle = () => {
+    if (!stt) {
+      alert('Speech recognition not supported.');
+      return;
+    }
+
+    if (!isListening) {
+      // START listening
+      setLoading(true);
+      setIsListening(true);
+
+      let buffer = query; // capture current query
+
+      stt.start({
+        onPartial: (text) => {
+          const combined = `${buffer} ${text}`.trim();
+          setQuery(combined);
+          setValue('query', combined);
+        },
+        onFinal: (text) => {
+          buffer = `${buffer} ${text}`.trim();
+          setValue('query', buffer);
+          setLoading(false);
+          setIsListening(false);
+        },
+        onError: (e) => {
+          console.error('STT error:', e);
+          setLoading(false);
+          setIsListening(false);
+        },
+      });
+    } else {
+      // STOP gracefully
+      try {
+        stt._rec.onend = () => {
+          console.log('Recognition stopped by user.');
+          setIsListening(false);
+          setLoading(false);
+        };
+        setTimeout(() => stt.stop(), 200);
+      } catch (err) {
+        console.error('Error stopping STT:', err);
         setIsListening(false);
         setLoading(false);
-      };
-      setTimeout(() => stt.stop(), 200);
-    } catch (err) {
-      console.error('Error stopping STT:', err);
-      setIsListening(false);
-      setLoading(false);
+      }
     }
-  }
-};
+  };
+
+  const handleAudioToggle = async (e) => {
+    setTtsEnabled(e.target.checked);
+    console.log('TTS Enabled:', e.target.checked);
+  };
+
 
 
   const handleQueryChange = (e) => {
@@ -109,16 +142,46 @@ const handleVoiceToggle = () => {
     setValue('query', e.target.value);
   };
 
-  const handleResponseChange = (e) => {
-    setResponseText(e.target.value);
-  }
 
   const doQuery = async (data) => {
-    console.log('Query submitted:', query);
-    const result = await invoke('sendData', { query });
-    console.log('Response from sendData:', result);
-    setResponseText(result); // update response text
+    unlockAudio();
+    try {
+      console.log('Query submitted:', query);
+
+      // Send query to backend
+      const result = await invoke('sendData', { query });
+      console.log('Response from sendData:', result);
+      setResponseText(result);
+
+      // Optional text-to-speech
+      if (ttsEnabled && result) {
+        console.log('Requesting TTS for response...');
+        const audioBase64 = await invoke('getTTS', { text: result });
+        console.log('Received TTS audio data');
+
+        const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
+        const audioBlob = new Blob([audioBytes], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(audioBlob);
+
+        // unlock audio before playback
+        await unlockAudio();
+
+        // play via existing <audio> element (safer in Forge)
+        if (audioCtxRef.current) {
+          audioCtxRef.current.src = audioUrl;
+          audioCtxRef.current.play().then(() => {
+            console.log('Audio playback started.');
+          }).catch(err => {
+            console.error('Audio playback failed:', err);
+          });
+        }
+      }
+
+    } catch (err) {
+      console.error('Error in doQuery:', err);
+    }
   };
+
 
   return (
     <>
@@ -139,13 +202,14 @@ const handleVoiceToggle = () => {
             <Button onClick={handleVoiceToggle} appearance={isListening ? 'danger' : 'default'}>
               {isListening ? 'Stop Listening' : (loading ? 'Listening...' : 'Voice Input')}
             </Button>
-            <Button type="submit" appearance="primary">
+            <Button type="submit" appearance="primary" onClick={unlockAudio}>
               Submit
             </Button>
           </ButtonGroup>
         </FormFooter>
       </Form>
-
+      <Toggle id="TTS" onChange={handleAudioToggle} isChecked={ttsEnabled}></Toggle>
+      <Label laberFor="TTS">Enable Text-to-Speech</Label>
       <Text>{responseText}</Text>
     </>
   );
