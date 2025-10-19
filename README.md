@@ -1,6 +1,6 @@
 # JiraGenie
 
-An intelligent assistant that helps analyze and interact with Jira issues using natural language queries. Built with Forge and powered by Google's Gemini AI.
+An intelligent, lightning-fast assistant that helps analyze and interact with Jira issues using natural language queries. Built with Forge and powered by Google's Gemini AI for rapid responses and real-time insights.
 
 ## Features
 
@@ -34,12 +34,24 @@ An intelligent assistant that helps analyze and interact with Jira issues using 
 npm install
 ```
 
-2. Deploy the app:
+2. Set the following environment variables and manifest:
+```
+environment variables : 
+    JIRA_BASE_URL
+    JIRA_EMAIL
+    JIRA_API_TOKEN
+    GEMINI_API_KEY
+forge variables set <ENV_NAME> <VALUE>
+
+https://uw-dh25.atlassian.net > to your atlassian page.
+```
+
+3. Deploy the app:
 ```bash
 forge deploy
 ```
 
-3. Install in your Jira instance:
+1. Install in your Jira instance:
 ```bash
 forge install
 ```
@@ -73,9 +85,9 @@ forge tunnel
 ## Usage
 
 1. Navigate to your Jira project
-2. Look for the "Smart Query" module
+2. Look for the "JiraGenie" module
 3. Enter your query by typing or using voice input
-4. Click submit or stop voice recording to process
+4. Click submit to process
 5. View the AI-generated response in formatted text
 
 ## Security & Privacy
@@ -84,11 +96,5 @@ forge tunnel
 - No persistent storage of voice data
 - Compliant with Atlassian's security standards
 
-## Support & Contribution
 
-For issues or feature requests, please use the GitHub issue tracker.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
 
