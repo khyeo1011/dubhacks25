@@ -63,24 +63,50 @@ const App = () => {
   const unlockAudio = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
-      if (!AudioCtx) return false;
+      if (!AudioCtx) {
+        console.log('AudioContext not supported.');
+        return;
+      }
 
       if (!audioCtxRef.current) {
         audioCtxRef.current = new AudioCtx();
       }
-      // resume returns a Promise
-      audioCtxRef.current.resume().then(() => {
-        console.log('AudioContext resumed (user gesture). state=', audioCtxRef.current.state);
-      }).catch(err => {
-        console.warn('AudioContext resume failed:', err);
-      });
 
-      return true;
+      // Resume immediately on gesture
+      if (audioCtxRef.current.state === 'suspended') {
+        audioCtxRef.current.resume().then(() => {
+          console.log('AudioContext resumed. State =', audioCtxRef.current.state);
+        });
+      }
     } catch (err) {
-      console.warn('unlockAudio error', err);
-      return false;
+      console.error('unlockAudio error:', err);
     }
   };
+
+  const playBase64Audio = async (base64Audio) => {
+    try {
+      const audioCtx = audioCtxRef.current;
+      if (!audioCtx) {
+        console.warn('AudioContext not initialized');
+        return;
+      }
+
+      // Convert Base64 → ArrayBuffer
+      const audioBytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
+      const audioBuffer = await audioCtx.decodeAudioData(audioBytes.buffer);
+
+      // Create and start playback
+      const source = audioCtx.createBufferSource();
+      source.buffer = audioBuffer;
+      source.connect(audioCtx.destination);
+      source.start();
+
+      console.log('Audio playback started');
+    } catch (err) {
+      console.error('Error playing audio:', err);
+    }
+  };
+
 
   const handleVoiceToggle = () => {
     if (!stt) {
@@ -103,7 +129,7 @@ const App = () => {
         },
         onFinal: (text) => {
           buffer = `${buffer} ${text}`.trim();
-          setValue('query', buffer);
+          setValue('query', text);
           setLoading(false);
           setIsListening(false);
         },
@@ -144,43 +170,32 @@ const App = () => {
 
 
   const doQuery = async (data) => {
-    unlockAudio();
     try {
       console.log('Query submitted:', query);
 
-      // Send query to backend
+      // Call backend
       const result = await invoke('sendData', { query });
       console.log('Response from sendData:', result);
       setResponseText(result);
+      
+      // Optional TTS
+      if (ttsEnabled && responseText) {
+        console.log('Fetching TTS audio... ', responseText);
 
-      // Optional text-to-speech
-      if (ttsEnabled && result) {
-        console.log('Requesting TTS for response...');
-        const audioBase64 = await invoke('getTTS', { text: result });
-        console.log('Received TTS audio data');
+        // Request TTS data
+        const audioBase64 = await invoke('getTTS', { text: responseText });
 
-        const audioBytes = Uint8Array.from(atob(audioBase64), c => c.charCodeAt(0));
-        const audioBlob = new Blob([audioBytes], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(audioBlob);
+        // Unlock audio context (if not already)
+        unlockAudio();
 
-        // unlock audio before playback
-        await unlockAudio();
-
-        // play via existing <audio> element (safer in Forge)
-        if (audioCtxRef.current) {
-          audioCtxRef.current.src = audioUrl;
-          audioCtxRef.current.play().then(() => {
-            console.log('Audio playback started.');
-          }).catch(err => {
-            console.error('Audio playback failed:', err);
-          });
-        }
+        // Play TTS audio safely
+        await playBase64Audio(audioBase64);
       }
-
     } catch (err) {
       console.error('Error in doQuery:', err);
     }
   };
+
 
 
   return (
