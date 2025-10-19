@@ -22,5 +22,6 @@ permissions:
   external:
     fetch:
       backend:
-        - address: "https://api.elevenlabs.io"
+        - address: https://api.elevenlabs.io
+        - address: https://generativelanguage.googleapis.com
   scopes: []
