@@ -18,3 +18,9 @@ app:
     memoryMB: 256
     architecture: arm64
   id: ari:cloud:ecosystem::app/54047718-10bf-48bd-b03a-ce7bfe21401b
+permissions:
+  external:
+    fetch:
+      backend:
+        - address: "*.elevenlabs.io"
+  scopes: []

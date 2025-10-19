@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import ForgeReconciler, {
   Button,
   ButtonGroup,
@@ -13,12 +13,14 @@ import ForgeReconciler, {
   Box
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
+import { BrowserSTT } from './stt';
+
 
 /* ---------- Subcomponents ---------- */
 
-const VoiceInput = ({ onClick, loading }) => (
-  <Button onClick={onClick} isDisabled={loading}>
-    {loading ? 'Listening...' : 'Voice Input'}
+const VoiceInput = ({ loading, isListening }) => (
+  <Button appearance={isListening ? 'danger' : 'default'}>
+    {isListening ? 'Stop Listening' : (loading ? 'Listening...' : 'Voice Input')}
   </Button>
 );
 
@@ -28,9 +30,9 @@ const SubmitButton = () => (
   </Button>
 );
 
-const InputButtons = ({ onVoiceInput, loading }) => (
+const InputButtons = ({ onVoiceInput, loading, isListening }) => (
   <ButtonGroup>
-    <VoiceInput onClick={onVoiceInput} loading={loading} />
+    <VoiceInput onClick={onVoiceInput} loading={loading} isListening={isListening} />
     <SubmitButton />
   </ButtonGroup>
 );
@@ -42,25 +44,65 @@ const App = () => {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState(''); // control the text field value
   const [responseText, setResponseText] = useState(''); // state for response text
+  const [isListening, setIsListening] = useState(false);
+  const [stt, setStt] = useState(null);
 
-  const getVoiceInput = async () => {
+
+  useEffect(() => {
+    if (BrowserSTT.isSupported()) {
+      const instance = new BrowserSTT({ lang: 'en-US', interim: true, continuous: true });
+      setStt(instance);
+    } else {
+      console.warn('Speech recognition not supported in this browser.');
+    }
+  }, []);
+
+const handleVoiceToggle = () => {
+  if (!stt) {
+    alert('Speech recognition not supported.');
+    return;
+  }
+
+  if (!isListening) {
+    // START listening
+    setLoading(true);
+    setIsListening(true);
+
+    stt.start({
+      onPartial: (text) => {
+        const combined = `${buffer} ${text}`.trim();
+        setQuery(combined);
+        setValue('query', combined);
+      },
+      onFinal: (text) => {
+        setQuery(text);
+        setValue('query', text);
+        setLoading(false);
+        setIsListening(false);
+      },
+      onError: (e) => {
+        console.error('STT error:', e);
+        setLoading(false);
+        setIsListening(false);
+      },
+    });
+  } else {
+    // STOP gracefully
     try {
-      setLoading(true);
-      console.log('Invoking getText...');
-      const result = await invoke('getText', { example: 'my-invoke-variable' });
-
-      if (result && typeof result === 'string' && result.trim() !== '') {
-        setQuery(result);
-        setValue('query', result); // keep react-hook-form in sync
-      } else {
-        console.warn('No text returned from getText');
-      }
-    } catch (error) {
-      console.error('Error invoking getText:', error);
-    } finally {
+      stt._rec.onend = () => {
+        console.log('Recognition stopped by user.');
+        setIsListening(false);
+        setLoading(false);
+      };
+      setTimeout(() => stt.stop(), 200);
+    } catch (err) {
+      console.error('Error stopping STT:', err);
+      setIsListening(false);
       setLoading(false);
     }
-  };
+  }
+};
+
 
   const handleQueryChange = (e) => {
     setQuery(e.target.value);
@@ -80,24 +122,31 @@ const App = () => {
 
   return (
     <>
-    <Form onSubmit={handleSubmit(doQuery)}>
-      <FormHeader title="Smart Query">
-        <Text>Use voice input or type your query below:</Text>
-      </FormHeader>
+      <Form onSubmit={handleSubmit(doQuery)}>
+        <FormHeader title="Smart Query">
+          <Text>Use voice input or type your query below:</Text>
+        </FormHeader>
 
-      <Textfield
-        {...register('query')}
-        value={query}
-        onChange={handleQueryChange}
-        placeholder="Your query will appear here..."
-      />
+        <Textfield
+          {...register('query')}
+          value={query}
+          onChange={handleQueryChange}
+          placeholder="Your query will appear here..."
+        />
 
-      <FormFooter>
-        <InputButtons onVoiceInput={getVoiceInput} loading={loading} />
-      </FormFooter>
-    </Form>
+        <FormFooter>
+          <ButtonGroup>
+            <Button onClick={handleVoiceToggle} appearance={isListening ? 'danger' : 'default'}>
+              {isListening ? 'Stop Listening' : (loading ? 'Listening...' : 'Voice Input')}
+            </Button>
+            <Button type="submit" appearance="primary">
+              Submit
+            </Button>
+          </ButtonGroup>
+        </FormFooter>
+      </Form>
 
-    <Text>{responseText}</Text>
+      <Text>{responseText}</Text>
     </>
   );
 };
