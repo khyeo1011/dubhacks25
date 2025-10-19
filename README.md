@@ -1,39 +1,94 @@
-# Forge Hello World
+# JiraGenie
 
-This project contains a Forge app written in Javascript that displays `Hello World!` in a Jira project page. 
+An intelligent assistant that helps analyze and interact with Jira issues using natural language queries. Built with Forge and powered by Google's Gemini AI.
 
-See [developer.atlassian.com/platform/forge/](https://developer.atlassian.com/platform/forge) for documentation and tutorials explaining Forge.
+## Features
 
-## Requirements
+### 🎯 Core Capabilities
 
-See [Set up Forge](https://developer.atlassian.com/platform/forge/set-up-forge/) for instructions to get set up.
+- **Natural Language Queries**: Ask questions about your Jira issues in plain English
+- **Voice Input Support**: Hands-free querying with speech-to-text functionality
+- **Smart Analysis**: AI-powered analysis of Jira issue data
+- **Markdown Rendering**: Clean, formatted responses using Atlassian Document Format
 
-## Quick start
-- Install dependecies
-```
+### 🎤 Voice Interaction
+
+- Real-time voice-to-text transcription
+- Continuous listening mode with interim results
+- Visual feedback for recording state
+- Browser compatibility detection
+
+## Setup & Installation
+
+### Prerequisites
+
+1. Node.js and npm
+2. Forge CLI: `npm install -g @forge/cli`
+3. A Jira Cloud instance
+4. A Google Cloud Platform account with Gemini API access
+
+### Installation Steps
+
+1. Install dependencies:
+```bash
 npm install
 ```
-- Modify your app frontend by editing the `src/frontend/index.jsx` file.
 
-- Modify your app backend by editing the `src/resolvers/index.js` file to define resolver functions. See [Forge resolvers](https://developer.atlassian.com/platform/forge/runtime-reference/custom-ui-resolver/) for documentation on resolver functions.
-
-- Build and deploy your app by running:
-```
+2. Deploy the app:
+```bash
 forge deploy
 ```
 
-- Install your app in an Atlassian site by running:
-```
+3. Install in your Jira instance:
+```bash
 forge install
 ```
 
-- Develop your app by running `forge tunnel` to proxy invocations locally:
-```
+## Development
+
+### Local Development
+
+Run the app locally using Forge tunnel:
+```bash
 forge tunnel
 ```
 
-### Notes
-- Use the `forge deploy` command when you want to persist code changes.
-- Use the `forge install` command when you want to install the app on a new site.
-- Once the app is installed on a site, the site picks up the new app changes you deploy without needing to rerun the install command.
+### Project Structure
+
+- `src/frontend/`: React-based UI components
+  - `index.jsx`: Main app interface
+  - `stt.js`: Speech-to-text functionality
+
+- `src/resolvers/`: Backend logic
+  - `geminiClient.js`: AI integration
+  - `index.js`: API resolvers
+
+### Key Technologies
+
+- React for UI
+- Forge UI Kit for Atlassian integration
+- Google Gemini for AI analysis
+- Web Speech API for voice input
+
+## Usage
+
+1. Navigate to your Jira project
+2. Look for the "Smart Query" module
+3. Enter your query by typing or using voice input
+4. Click submit or stop voice recording to process
+5. View the AI-generated response in formatted text
+
+## Security & Privacy
+
+- All data processing happens within Forge's secure environment
+- No persistent storage of voice data
+- Compliant with Atlassian's security standards
+
+## Support & Contribution
+
+For issues or feature requests, please use the GitHub issue tracker.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
