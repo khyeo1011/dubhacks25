@@ -8,10 +8,6 @@ import ForgeReconciler, {
   Text,
   Textfield,
   useForm,
-  TextArea,
-  Link,
-  Label,
-  Toggle,
   AdfRenderer,
   LoadingButton
 } from '@forge/react';
@@ -51,7 +47,6 @@ const App = () => {
   const [responseText, setResponseText] = useState(''); // state for response text
   const [isListening, setIsListening] = useState(false);
   const [stt, setStt] = useState(null);
-  const [ttsEnabled, setTtsEnabled] = useState(false);
 
   useEffect(() => {
     if (BrowserSTT.isSupported()) {
@@ -62,47 +57,7 @@ const App = () => {
     }
   }, []);
 
-  const audioRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
-
-  const playBase64Audio = async (base64Audio) => {
-    try {
-      // Convert base64 to blob URL
-      const audioBytes = Uint8Array.from(atob(base64Audio), c => c.charCodeAt(0));
-      const blob = new Blob([audioBytes.buffer], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-
-      // Create new audio element
-      const audio = new Audio(url);
-      
-      // Clean up previous audio if exists
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = '';
-      }
-
-      // Set up event handlers
-      audio.onended = () => {
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-      };
-      audio.onerror = (e) => {
-        console.error('Audio playback error:', e);
-        setIsPlaying(false);
-        URL.revokeObjectURL(url);
-      };
-
-      // Play audio
-      audioRef.current = audio;
-      setIsPlaying(true);
-      await audio.play();
-
-      console.log('Audio playback started');
-    } catch (err) {
-      console.error('Error playing audio:', err);
-      setIsPlaying(false);
-    }
-  };
+  
 
 
   const handleVoiceToggle = () => {
@@ -153,10 +108,6 @@ const App = () => {
     }
   };
 
-  const handleAudioToggle = async (e) => {
-    setTtsEnabled(e.target.checked);
-    console.log('TTS Enabled:', e.target.checked);
-  };
 
 
 
@@ -176,17 +127,6 @@ const App = () => {
       console.log('Response from sendData:', result);
       setResponseText(markdownToAdf(result));
       console.log('Converted ADF:', responseText);
-      
-      // Optional TTS
-      if (ttsEnabled && responseText) {
-        console.log('Fetching TTS audio... ', result);
-
-        // Request TTS data
-        const audioBase64 = await invoke('getTTS', { text: result });
-
-        // Play TTS audio
-        await playBase64Audio(audioBase64);
-      }
     } catch (err) {
       console.error('Error in doQuery:', err);
     } finally {
