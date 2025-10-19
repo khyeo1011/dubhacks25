@@ -17,6 +17,7 @@
     "@forge/react": "11.5.0",
     "@forge/resolver": "1.7.0",
     "@google/genai": "^1.25.0",
+    "@json2csv/plainjs": "^7.0.6",
     "axios": "^1.12.2",
     "dotenv": "^17.2.3",
     "json2csv": "^6.0.0-alpha.2",

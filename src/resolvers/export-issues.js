@@ -23,6 +23,7 @@ const client = axios.create({
 });
 
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+const DEBUG = (process.env.DEBUG || '').toLowerCase() === 'true';
 
 // --- Config ---
 let JQL = (process.env.JQL || 'order by created desc').trim();
@@ -43,7 +44,7 @@ const isUnboundedJql = jql => {
 };
 if (isUnboundedJql(JQL)) {
   JQL = `${DEFAULT_BOUND} ${JQL ? ' ' + JQL : ''}`.trim();
-  console.warn(`[JQL guard] Unbounded JQL detected. Using bounded JQL: ${JQL}`);
+  if (DEBUG) console.log(`[JQL guard] Unbounded JQL detected. Using bounded JQL: ${JQL}`);
 }
 
 // --- Rate limit helper ---
@@ -80,12 +81,10 @@ async function fetchAllIssues() {
 
     const { issues = [], nextPageToken: token } = res.data || {};
     all.push(...issues);
-    process.stdout.write(`Fetched ${all.length} issues\r`);
 
-    if (!token || issues.length === 0) {
-      process.stdout.write('\n');
-      break;
-    }
+    if (DEBUG) console.log(`Fetched page, total so far: ${all.length}`);
+
+    if (!token || issues.length === 0) break;
     nextPageToken = token;
   }
   return all;
@@ -126,7 +125,7 @@ function flattenIssue(issue) {
   };
 }
 
-// --- Convert Atlassian Document Format (ADF) description to plain text ---
+// --- Convert ADF description to plain text ---
 function extractAtlassianDocText(doc) {
   const walk = node => {
     if (!node) return '';
@@ -144,8 +143,7 @@ async function getIssuesCsvString() {
   const issues = await fetchAllIssues();
   const rows = issues.map(flattenIssue);
   const parser = new Parser({ withBOM: true });
-  const csv = parser.parse(rows);
-  return csv;
+  return parser.parse(rows); // CSV string
 }
 
 module.exports = { getIssuesCsvString };

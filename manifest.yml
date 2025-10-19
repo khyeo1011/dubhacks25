@@ -24,4 +24,5 @@ permissions:
       backend:
         - address: https://api.elevenlabs.io
         - address: https://generativelanguage.googleapis.com
+        - address: https://uw-dh25.atlassian.net
   scopes: []
