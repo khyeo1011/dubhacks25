@@ -11,8 +11,11 @@ import ForgeReconciler, {
   TextArea,
   Link,
   Label,
-  Toggle
+  Toggle,
+  AdfRenderer,
+  LoadingButton
 } from '@forge/react';
+import { markdownToAdf } from 'marklassian';
 import { invoke } from '@forge/bridge';
 import { BrowserSTT } from './stt';
 
@@ -42,7 +45,8 @@ const InputButtons = ({ onVoiceInput, loading, isListening }) => (
 
 const App = () => {
   const { handleSubmit, register, setValue } = useForm();
-  const [loading, setLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVoiceLoading, setIsVoiceLoading] = useState(false);
   const [query, setQuery] = useState(''); // control the text field value
   const [responseText, setResponseText] = useState(''); // state for response text
   const [isListening, setIsListening] = useState(false);
@@ -116,7 +120,7 @@ const App = () => {
 
     if (!isListening) {
       // START listening
-      setLoading(true);
+      setIsVoiceLoading(true);
       setIsListening(true);
 
       let buffer = query; // capture current query
@@ -130,12 +134,12 @@ const App = () => {
         onFinal: (text) => {
           buffer = `${buffer} ${text}`.trim();
           setValue('query', text);
-          setLoading(false);
+          setIsVoiceLoading(false);
           setIsListening(false);
         },
         onError: (e) => {
           console.error('STT error:', e);
-          setLoading(false);
+          setIsVoiceLoading(false);
           setIsListening(false);
         },
       });
@@ -145,13 +149,13 @@ const App = () => {
         stt._rec.onend = () => {
           console.log('Recognition stopped by user.');
           setIsListening(false);
-          setLoading(false);
+          setIsVoiceLoading(false);
         };
         setTimeout(() => stt.stop(), 200);
       } catch (err) {
         console.error('Error stopping STT:', err);
         setIsListening(false);
-        setLoading(false);
+        setIsVoiceLoading(false);
       }
     }
   };
@@ -171,19 +175,21 @@ const App = () => {
 
   const doQuery = async (data) => {
     try {
+      setIsSubmitting(true);
       console.log('Query submitted:', query);
 
       // Call backend
       const result = await invoke('sendData', { query });
       console.log('Response from sendData:', result);
-      setResponseText(result);
+      setResponseText(markdownToAdf(result));
+      console.log('Converted ADF:', responseText);
       
       // Optional TTS
       if (ttsEnabled && responseText) {
-        console.log('Fetching TTS audio... ', responseText);
+        console.log('Fetching TTS audio... ', result);
 
         // Request TTS data
-        const audioBase64 = await invoke('getTTS', { text: responseText });
+        const audioBase64 = await invoke('getTTS', { text: result });
 
         // Unlock audio context (if not already)
         unlockAudio();
@@ -193,6 +199,8 @@ const App = () => {
       }
     } catch (err) {
       console.error('Error in doQuery:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -214,18 +222,30 @@ const App = () => {
 
         <FormFooter>
           <ButtonGroup>
-            <Button onClick={handleVoiceToggle} appearance={isListening ? 'danger' : 'default'}>
-              {isListening ? 'Stop Listening' : (loading ? 'Listening...' : 'Voice Input')}
+            <Button 
+              onClick={handleVoiceToggle} 
+              appearance={isListening ? 'danger' : 'default'}
+              isDisabled={isSubmitting}
+            >
+              {isListening ? 'Stop Listening' : 'Voice Input'}
             </Button>
-            <Button type="submit" appearance="primary" onClick={unlockAudio}>
+            <LoadingButton 
+              type="submit" 
+              appearance="primary" 
+              onClick={unlockAudio}
+              isLoading={isSubmitting}
+              isDisabled={isSubmitting}
+            >
               Submit
-            </Button>
+            </LoadingButton>
           </ButtonGroup>
         </FormFooter>
       </Form>
       <Toggle id="TTS" onChange={handleAudioToggle} isChecked={ttsEnabled}></Toggle>
       <Label laberFor="TTS">Enable Text-to-Speech</Label>
-      <Text>{responseText}</Text>
+      {responseText && (
+        <AdfRenderer document={responseText} />
+      )}
     </>
   );
 };
