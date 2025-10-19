@@ -242,7 +242,7 @@ const App = () => {
         </FormFooter>
       </Form>
       <Toggle id="TTS" onChange={handleAudioToggle} isChecked={ttsEnabled}></Toggle>
-      <Label laberFor="TTS">Enable Text-to-Speech</Label>
+      <Label labelFor="TTS">Enable Text-to-Speech</Label>
       {responseText && (
         <AdfRenderer document={responseText} />
       )}

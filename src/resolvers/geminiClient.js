@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import { GoogleGenAI } from "@google/genai";
-import fs from 'node:fs/promises'
 
 const ai = new GoogleGenAI({apiKey: process.env.GEMINI_API_KEY});
 
