@@ -27,7 +27,7 @@ export async function analyzePrompt({ userPrompt, fileText }) {
                       * **Insufficient Information:** 'Description' field is empty, contains only placeholder text (e.g., "TBD," "fill out later"), or is under 20 words.
                       * **Unassigned:** The 'Assignee' field is empty or set to a generic project queue user.
                       * **Stale Status:** The 'Status' is 'Open' or 'To Do', and the 'Last Updated' date is more than 60 days ago.
-                      * Provide a concise list of all flagged 'Garbage Tickets', including the 'Issue Key', 'Summary', and the **specific reason(s)** for the flag (e.g., "Unassigned & Insufficient Info").
+                      * Provide a concise list of all flagged 'Garbage Tickets', including the 'Issue Key', 'Summary', and the **specific reason(s)** for the flag (e.g., "Unassigned & Insufficient Info", "Lack of INVEST Compliance", etc).
 
                       **4. New Issue Creation Help and Duplicate Prevention:**
                       * When the **User Request** involves creating a new ticket (e.g., "I need to open a ticket for the login button bug on the homepage, could you check if it already exists"), you must **perform a duplicate check** against the existing data.
