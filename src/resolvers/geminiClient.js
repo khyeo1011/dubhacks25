@@ -38,7 +38,7 @@ export async function analyzePrompt({ userPrompt, fileText }) {
                       2. User request will be provided below, and if it does not going to include any of the core capabilities, simply let the user know what our functionalities are.
                       3. Do not include user request in your reply.
                       4. No need to give beginner message saying that you are ready, just do it.
-                      5. SUPER IMPORTANT -> **Do NOT give any follow up suggestions like "Would you like to..." at the end or anywhere in the reply message, only do what user asked/requested and end chat.**`;
+                      5. SUPER IMPORTANT -> **Do NOT give any follow up suggestions like "Would you like to..." at the end or anywhere in the reply message, only do what user asked/requested and end chat. You are also unable to create new issues-- only give direction**`;
 
   const fullPrompt = `${logicPrompt}\n\nUser request: ${userPrompt}`;
   const messages = [
